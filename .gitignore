@@ -1,2 +1,5 @@
-dataset/DisentanglingMotion/importing_data/moving_symbols/data
-dataset/DisentanglingMotion/importing_data/moving_symbols/output
+datasets/DisentanglingMotion/importing_data/moving_symbols/data/icons8
+datasets/DisentanglingMotion/importing_data/moving_symbols/data/mnist
+datasets/DisentanglingMotion/importing_data/moving_symbols/data/omniglot
+datasets/DisentanglingMotion/importing_data/moving_symbols/output
+datasets/UCF101

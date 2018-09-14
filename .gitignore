@@ -1,5 +1,8 @@
-datasets/DisentanglingMotion/importing_data/moving_symbols/data/icons8
-datasets/DisentanglingMotion/importing_data/moving_symbols/data/mnist
-datasets/DisentanglingMotion/importing_data/moving_symbols/data/omniglot
-datasets/DisentanglingMotion/importing_data/moving_symbols/output
-datasets/UCF101
+Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/icons8
+Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/mnist
+Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/omniglot
+Code/datasets/DisentanglingMotion/importing_data/moving_symbols/output
+Code/datasets/UCF-101
+Code/datasets/UCF-101-Flow
+inspiration
+

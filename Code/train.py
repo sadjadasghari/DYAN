@@ -65,19 +65,19 @@ checkptname = "UCFModel"
 # set train list name:
 trainFolderFile = 'trainlist01.txt'
 # set training data directory:
-rootDir = '/data/Abhishek/UCF_Flows/'
+rootDir = './datasets/UCF-101-Flow/'
 trainFoldeList = getListOfFolders(trainFolderFile)[::10]
 # if Kitti dataset: use listOfFolders instead of trainFoldeList
 # listOfFolders = [name for name in os.listdir(rootDir) if os.path.isdir(os.path.join(rootDir, name))]
 
 
 trainingData = videoDataset(folderList=trainFoldeList,
-							rootDir=rootDir,
-							N_FRAME=N_FRAME)
+                            rootDir=rootDir,
+                            N_FRAME=N_FRAME)
 
-dataloader = DataLoader(trainingData, 
-						batch_size=BATCH_SIZE ,
-						shuffle=True, num_workers=1)
+dataloader = DataLoader(trainingData,
+                        batch_size=BATCH_SIZE ,
+                        shuffle=True, num_workers=1)
 
 ## Initializing r, theta
 P,Pall = gridRing(N)
@@ -96,11 +96,11 @@ start_epoch = 1
 
 ## If want to continue training from a checkpoint
 if(load_ckpt):
-	loadedcheckpoint = torch.load(ckpt_file)
-	start_epoch = loadedcheckpoint['epoch']
-	model.load_state_dict(loadedcheckpoint['state_dict'])
-	optimizer.load_state_dict(loadedcheckpoint['optimizer'])
-	
+    loadedcheckpoint = torch.load(ckpt_file)
+    start_epoch = loadedcheckpoint['epoch']
+    model.load_state_dict(loadedcheckpoint['state_dict'])
+    optimizer.load_state_dict(loadedcheckpoint['optimizer'])
+
 
 print("Training from epoch: ", start_epoch)
 print('-' * 25)
@@ -108,25 +108,25 @@ start = time.time()
 
 ## Start the Training
 for epoch in range(start_epoch, EPOCH+1):
-	loss_value = []
-	scheduler.step()
-	for i_batch, sample in enumerate(dataloader):
-		data = sample['frames'].squeeze(0).cuda(gpu_id)
-		expectedOut = Variable(data)
-		inputData = Variable(data[:,0:FRA,:])
-		optimizer.zero_grad()
-		output = model.forward(inputData)
+    loss_value = []
+    scheduler.step()
+    for i_batch, sample in enumerate(dataloader):
+        data = sample['frames'].squeeze(0).cuda(gpu_id)
+        expectedOut = Variable(data)
+        inputData = Variable(data[:,0:FRA,:])
+        optimizer.zero_grad()
+        output = model.forward(inputData)
         loss = loss_mse(output[:,FRA], expectedOut[:,FRA]) # if Kitti: loss = loss_mse(output, expectedOut)
-		loss.backward()
-		optimizer.step()
-		loss_value.append(loss.data.item())
+        loss.backward()
+        optimizer.step()
+        loss_value.append(loss.data.item())
 
-	loss_val = np.mean(np.array(loss_value))
+    loss_val = np.mean(np.array(loss_value))
 
-	print('Epoch: ', epoch, '| train loss: %.4f' % loss_val)
+    print('Epoch: ', epoch, '| train loss: %.4f' % loss_val)
 
-	if epoch % saveEvery ==0 :
-		save_checkpoint({	'epoch': epoch + 1,
-							'state_dict': model.state_dict(),
-							'optimizer' : optimizer.state_dict(),
-							},checkptname+str(epoch)+'.pth')
+    if epoch % saveEvery ==0 :
+        save_checkpoint({	'epoch': epoch + 1,
+                            'state_dict': model.state_dict(),
+                            'optimizer' : optimizer.state_dict(),
+                            },checkptname+str(epoch)+'.pth')

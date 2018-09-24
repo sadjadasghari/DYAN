@@ -38,34 +38,44 @@ from DyanOF import OFModel
 NumOfPoles = 40
 EPOCH = 300
 BATCH_SIZE = 1
-LR = 0.005
-gpu_id = 1
+LR = 0.0015
+gpu_id = 1  # 3?
 ## For training UCF
 # Input -  3 Optical Flow
 # Output - 1 Optical Flow
 ## For training Kitti
 # Input -  9 Optical Flow
 # Output - 1 Optical Flow
-FRA = 3 # input number of frame
+FRA = 9 # input number of frame
 PRE = 1 # output number of frame
 N_FRAME = FRA+PRE
 N = NumOfPoles*4
 T = FRA # number of row in dictionary(same as input number of frame)
-saveEvery = 2
+saveEvery = 100
+
+#mnist
+x_fra = 64
+y_fra = 64
 
 
 ## Load saved model 
 load_ckpt = False
 ckpt_file = 'preTrainedModel/UCFModel.pth' # for Kitti Dataset: 'KittiModel.pth'
-checkptname = "UCFModel"
+# checkptname = "UCFModel"
+checkptname = "UCFModel_Raw"
 
 
 
 ## Load input data
+
 # set train list name:
-trainFolderFile = 'trainlist01.txt'
+trainFolderFile = './datasets/DisentanglingMotion/importing_data/moving_symbols/MovingSymbols2_trainlist.txt'
+# trainFolderFile = 'trainlist01.txt'
+
 # set training data directory:
-rootDir = './datasets/UCF-101-Flow/'
+rootDir = './datasets/DisentanglingMotion/importing_data/moving_symbols/output/MovingSymbols2_same_4px-Frames/train'
+# rootDir = './datasets/UCF-101-Frames'
+
 trainFoldeList = getListOfFolders(trainFolderFile)[::10]
 # if Kitti dataset: use listOfFolders instead of trainFoldeList
 # listOfFolders = [name for name in os.listdir(rootDir) if os.path.isdir(os.path.join(rootDir, name))]
@@ -74,7 +84,7 @@ trainFoldeList = getListOfFolders(trainFolderFile)[::10]
 trainingData = videoDataset(folderList=trainFoldeList,
                             rootDir=rootDir,
                             N_FRAME=N_FRAME)
-
+print('HOOLA')
 dataloader = DataLoader(trainingData,
                         batch_size=BATCH_SIZE ,
                         shuffle=True, num_workers=1)
@@ -85,6 +95,7 @@ Drr = abs(P)
 Drr = torch.from_numpy(Drr).float()
 Dtheta = np.angle(P)
 Dtheta = torch.from_numpy(Dtheta).float()
+# What and where is gamma
 
 ## Create the model
 model = OFModel(Drr, Dtheta, T, PRE, gpu_id)
@@ -114,8 +125,16 @@ for epoch in range(start_epoch, EPOCH+1):
         data = sample['frames'].squeeze(0).cuda(gpu_id)
         expectedOut = Variable(data)
         inputData = Variable(data[:,0:FRA,:])
+        # print (expectedOut[:,FRA].shape)
+        # print(inputData[:, 0:FRA, :].shape)
         optimizer.zero_grad()
         output = model.forward(inputData)
+
+        #torchvision.utils.save_image(inputData[:, FRA, :].view(-1, 64, 64)[0,:,:], 'inputs.png', )
+        # print('op: ', torch.sum(output.data))
+        torchvision.utils.save_image(output[:, FRA].view(1,x_fra,y_fra), 'predicted_output.png',)
+        torchvision.utils.save_image(expectedOut[:, FRA].view(1,x_fra,y_fra), 'expected_output.png', )
+
         loss = loss_mse(output[:,FRA], expectedOut[:,FRA]) # if Kitti: loss = loss_mse(output, expectedOut)
         loss.backward()
         optimizer.step()
@@ -123,10 +142,15 @@ for epoch in range(start_epoch, EPOCH+1):
 
     loss_val = np.mean(np.array(loss_value))
 
-    print('Epoch: ', epoch, '| train loss: %.4f' % loss_val)
 
     if epoch % saveEvery ==0 :
         save_checkpoint({	'epoch': epoch + 1,
                             'state_dict': model.state_dict(),
                             'optimizer' : optimizer.state_dict(),
                             },checkptname+str(epoch)+'.pth')
+
+    if epoch % 4 == 0:
+        print(model.state_dict()['l1.rr'])
+        print(model.state_dict()['l1.theta'])
+        # loss_val = float(loss_val/i_batch)
+    print('Epoch: ', epoch, '| train loss: %.4f' % loss_val)

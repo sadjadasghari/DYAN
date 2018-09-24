@@ -30,27 +30,27 @@ gpu_id = 1
 opticalflow_ckpt_file = 'preTrainedModel/UCFModel.pth' # if Kitti: 'KittiModel.pth'
 
 def loadOpticalFlowModel(ckpt_file):
-	loadedcheckpoint = torch.load(ckpt_file)
-	stateDict = loadedcheckpoint['state_dict']
-	
-	# load parameters
-	Dtheta = stateDict['l1.theta'] 
-	Drr    = stateDict['l1.rr']
-	model = OFModel(Drr, Dtheta, FRA,PRE,gpu_id)
-	model.cuda(gpu_id)
-	
-	return model
+    loadedcheckpoint = torch.load(ckpt_file)
+    stateDict = loadedcheckpoint['state_dict']
+
+    # load parameters
+    Dtheta = stateDict['l1.theta']
+    Drr    = stateDict['l1.rr']
+    model = OFModel(Drr, Dtheta, FRA,PRE,gpu_id)
+    model.cuda(gpu_id)
+
+    return model
 
 def warp(input,tensorFlow):
-	torchHorizontal = torch.linspace(-1.0, 1.0, input.size(3))
-	torchHorizontal = torchHorizontal.view(1, 1, 1, input.size(3)).expand(input.size(0), 1, input.size(2), input.size(3))
-	torchVertical = torch.linspace(-1.0, 1.0, input.size(2))
-	torchVertical = torchVertical.view(1, 1, input.size(2), 1).expand(input.size(0), 1, input.size(2), input.size(3))
+    torchHorizontal = torch.linspace(-1.0, 1.0, input.size(3))
+    torchHorizontal = torchHorizontal.view(1, 1, 1, input.size(3)).expand(input.size(0), 1, input.size(2), input.size(3))
+    torchVertical = torch.linspace(-1.0, 1.0, input.size(2))
+    torchVertical = torchVertical.view(1, 1, input.size(2), 1).expand(input.size(0), 1, input.size(2), input.size(3))
 
-	tensorGrid = torch.cat([ torchHorizontal, torchVertical ], 1).cuda(gpu_id)
-	tensorFlow = torch.cat([ tensorFlow[:, 0:1, :, :] / ((input.size(3) - 1.0) / 2.0), tensorFlow[:, 1:2, :, :] / ((input.size(2) - 1.0) / 2.0) ], 1)
+    tensorGrid = torch.cat([ torchHorizontal, torchVertical ], 1).cuda(gpu_id)
+    tensorFlow = torch.cat([ tensorFlow[:, 0:1, :, :] / ((input.size(3) - 1.0) / 2.0), tensorFlow[:, 1:2, :, :] / ((input.size(2) - 1.0) / 2.0) ], 1)
 
-	return torch.nn.functional.grid_sample(input=input, grid=(tensorGrid + tensorFlow).permute(0, 2, 3, 1), mode='bilinear', padding_mode='border')
+    return torch.nn.functional.grid_sample(input=input, grid=(tensorGrid + tensorFlow).permute(0, 2, 3, 1), mode='bilinear', padding_mode='border')
 
 ##################### Only for Kitti dataset need to define: ##############
 
@@ -93,41 +93,41 @@ testFoldeList = getListOfFolders(testFolderFile)[::10]
 flowDir = '/home/abhishek/Workspace/UCF_Flows/Flows_ByName/'
 
 for	numfo,folder in enumerate(testFoldeList):
-	print("Started testing for - "+ folder)
+    print("Started testing for - "+ folder)
 
-	if not os.path.exists(os.path.join("Results", str(10*numfo+1))):
-		os.makedirs(os.path.join("Results", str(10*numfo+1)))
-	
-	frames = [each for each in os.listdir(os.path.join(rootDir, folder)) if each.endswith(('.jpeg'))]
-	frames.sort()
+    if not os.path.exists(os.path.join("Results", str(10*numfo+1))):
+        os.makedirs(os.path.join("Results", str(10*numfo+1)))
 
-	path = os.path.join(rootDir,folder,frames[4])
-	img = Image.open(path)
-	original = np.array(img)/255.
+    frames = [each for each in os.listdir(os.path.join(rootDir, folder)) if each.endswith(('.jpeg'))]
+    frames.sort()
 
-	path = os.path.join(rootDir,folder,frames[3])
-	img = Image.open(path)
-	frame4 = np.array(img)/255.
+    path = os.path.join(rootDir,folder,frames[4])
+    img = Image.open(path)
+    original = np.array(img)/255.
 
-	tensorinput = torch.from_numpy(frame4).type(torch.FloatTensor).permute(2,0,1).cuda(gpu_id).unsqueeze(0)
-	
-	for k in range(3):
-		flow = np.load(os.path.join(flowDir,folder,str(k)+'.npy'))
-		flow = np.transpose(flow,(2,0,1))
-		ofSample[:,k,:] = torch.from_numpy(flow.reshape(2,numOfPixels)).type(torch.FloatTensor)
-	
-	ofinputData = ofSample.cuda(gpu_id)
-	
-	with torch.no_grad():	
-		ofprediction = ofmodel.forward(Variable(ofinputData))[:,3,:].data.resize(2,240,320).unsqueeze(0)
-	
-	warpedPrediction = warp(tensorinput,ofprediction).squeeze(0).permute(1,2,0).cpu().numpy()
-	warpedPrediction = np.clip(warpedPrediction, 0, 1.)
+    path = os.path.join(rootDir,folder,frames[3])
+    img = Image.open(path)
+    frame4 = np.array(img)/255.
+
+    tensorinput = torch.from_numpy(frame4).type(torch.FloatTensor).permute(2,0,1).cuda(gpu_id).unsqueeze(0)
+
+    for k in range(3):
+        flow = np.load(os.path.join(flowDir,folder,str(k)+'.npy'))
+        flow = np.transpose(flow,(2,0,1))
+        ofSample[:,k,:] = torch.from_numpy(flow.reshape(2,numOfPixels)).type(torch.FloatTensor)
+
+    ofinputData = ofSample.cuda(gpu_id)
+
+    with torch.no_grad():
+        ofprediction = ofmodel.forward(Variable(ofinputData))[:,3,:].data.resize(2,240,320).unsqueeze(0)
+
+    warpedPrediction = warp(tensorinput,ofprediction).squeeze(0).permute(1,2,0).cpu().numpy()
+    warpedPrediction = np.clip(warpedPrediction, 0, 1.)
 
 
-	plt.imsave(os.path.join("Results", str(10*numfo+1),'GTFrame-%04d' % (5)+'.png'), original)
-	plt.imsave(os.path.join("Results", str(10*numfo+1),'PDFrame-%04d' % (5)+'.png'), warpedPrediction)
-	plt.close()
+    plt.imsave(os.path.join("Results", str(10*numfo+1),'GTFrame-%04d' % (5)+'.png'), original)
+    plt.imsave(os.path.join("Results", str(10*numfo+1),'PDFrame-%04d' % (5)+'.png'), warpedPrediction)
+    plt.close()
 
 
 ##################### Testing script ONLY for Kitti dataset: ##############

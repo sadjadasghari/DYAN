@@ -23,7 +23,7 @@ class FLG:
 # ------------------ Directory parameters ------------------ #
 
 FLG.dataset_path = './'  # Working directory.
-FLG.dataset_output = 'output/MovingSymbols2_same'               # Directory in which the generated dataset is stored.
+FLG.dataset_output = 'output/MovingSymbols2_same_1px'               # Directory in which the generated dataset is stored.
 
 # ------------------- Dataset parameters ------------------- #
 
@@ -33,18 +33,18 @@ FLG.movements = ['Vertical', 'Horizontal']  # Kind of movements that the objects
 
 # Train variables:
 FLG.num_train_videos = 5000          # Number of training clips per each movement.
-FLG.num_train_frames = 20            # Total number of frames per clip.
+FLG.num_train_frames = 20            # Total number of frames per clip., originally 20
 FLG.train_labels = [0, 3]            # List containing the object labels.
 FLG.train_size = (1, 1)              # Value ranges of the scaling factor applied to the original object.
-FLG.train_speed = (8, 8)             # Value ranges of the #pixels the object is displaced between frames.
+FLG.train_speed = (1, 1)             # Value ranges of the #pixels the object is displaced between frames.,originally (8,8)
 FLG.train_movements = FLG.movements  # Kind of movements applied to the training set.
 
 # Test variables:
 FLG.num_test_videos = 500
-FLG.num_test_frames = 20
+FLG.num_test_frames = 20 # originally 20
 FLG.test_labels = [0, 3]
 FLG.test_size = (1, 1)
-FLG.test_speed = (8, 8)
+FLG.test_speed = (1, 1) # originally (8,8)
 FLG.test_movements = FLG.movements
 
 

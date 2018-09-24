@@ -31,7 +31,8 @@ class videoDataset(Dataset):
         self.listOfFolders = folderList
         self.rootDir = rootDir
         self.nfra = N_FRAME
-        self.numpixels = 240*320 # If Kitti dataset, self.numpixels = 128*160
+        # self.numpixels = 240*320 # If Kitti dataset, self.numpixels = 128*160
+        self.numpixels = 64*64 # MNIST moving symbols dataset
 
     def __len__(self):
         return len(self.listOfFolders)
@@ -46,15 +47,38 @@ class videoDataset(Dataset):
     #         OF[:,framenum] = torch.from_numpy(flow.reshape(2,self.numpixels)).type(torch.FloatTensor)
     #     return OF
 
+
+
+    # ____FOR GRAYSCALE IMAGES____
     def readData(self, folderName):
         path = os.path.join(self.rootDir, folderName)
-        OF = torch.FloatTensor(3, self.nfra, self.numpixels)
+        Fr = torch.FloatTensor(1, self.nfra, self.numpixels)
         for framenum in range(self.nfra):
-            frame = Image.open(os.path.join(path, str(framenum) + '.jpg'))
-            flow = np.array(frame, dtype='uint8')
+            # frame = Image.open(os.path.join(path, str(framenum) + '.jpg'))
+            frame = cv2.imread(os.path.join(path, str(framenum) + '.jpg'), 0)
+            flow = np.array(frame, dtype='uint8')/255.
+            flow = np.expand_dims(flow, axis=2)
             flow = np.transpose(flow, (2, 0, 1))
-            OF[:, framenum] = torch.from_numpy(flow.reshape(3, self.numpixels)).type(torch.FloatTensor)
-        return OF
+            Fr[:, framenum] = torch.from_numpy(flow.reshape(1, self.numpixels)).type(torch.FloatTensor)
+        return Fr
+
+    # def readData(self, folderName):
+    #     transform = transforms.Compose([transforms.ToTensor()])
+    #     sample = torch.FloatTensor(self.nfra, 64, 64)
+    #
+    #     value = self.index[folderName]
+    #     nFrames = value['last'] - value['first']
+    #     numBatches = min(int(nFrames / self.nfra), 1)
+    #     sample = torch.FloatTensor(numBatches, self.nfra, self.numpixels)
+    #     for batchnum in range(numBatches):
+    #         for framenum in range(value['first'], value['first'] + self.nfra):
+    #             img = self.imageArray[framenum + self.nfra * batchnum]
+    #             # img =  np.transpose(img1,(2,0,1))
+    #             img = np.dot(img[..., :3], [0.299, 0.587, 0.114])
+    #             sample[batchnum, framenum - value['first'], :] = torch.from_numpy(img.reshape(self.nfra)).type(
+    #                 torch.FloatTensor)
+    #
+    #     return sample
 
     def __getitem__(self, idx):
         folderName = self.listOfFolders[idx]

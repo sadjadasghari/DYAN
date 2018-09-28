@@ -28,7 +28,7 @@ def creatRealDictionary(T, Drr, Dtheta, gpu_id):
     G = torch.norm(dic, p=2, dim=0)
     idx = (G == 0).nonzero()
     nG = G.clone()
-    nG[idx] = np.sqrt(T) # T?
+    nG[idx] = np.sqrt(T) # T = time horizon?
     G = nG
 
     dic = dic / G
@@ -97,11 +97,30 @@ class Encoder(nn.Module):
         return Variable(sparsecode)
 
 
+class Decoder(nn.Module):
+    def __init__(self, rr, theta, T, PRE, gpu_id): #PRE?
+        super(Decoder, self).__init__()
+
+        self.rr = rr
+        self.theta = theta
+        self.T = T
+        self.PRE = PRE
+        self.gid = gpu_id
+
+    def forward(self, x):
+        dic = creatRealDictionary(self.T + self.PRE, self.rr, self.theta, self.gid)
+        result = torch.matmul(dic, x)
+        return result
+
+
 class OFModel(nn.Module):
     def __init__(self, Drr, Dtheta, T, PRE, gpu_id):
         super(OFModel, self).__init__()
         self.l1 = Encoder(Drr, Dtheta, T, gpu_id)
-
+        self.l2 = Decoder(self.l1.rr, self.l1.theta, T, PRE, gpu_id)
 
     def forward(self, x):
+        return self.l2(self.l1(x))
+
+    def forward2(self, x):
         return self.l1(x)

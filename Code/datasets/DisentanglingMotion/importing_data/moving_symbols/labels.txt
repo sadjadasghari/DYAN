@@ -1,0 +1,2 @@
+./output/MovingSymbols2_same_4px-Frames/train/Horizontal/Horizontal_video_1/Horizontal
+./output/MovingSymbols2_same_4px-Frames/train/Horizontal/Horizontal_video_1/0

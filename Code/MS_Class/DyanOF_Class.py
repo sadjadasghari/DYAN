@@ -28,11 +28,11 @@ def creatRealDictionary(T, Drr, Dtheta, gpu_id):
     G = torch.norm(dic, p=2, dim=0)
     idx = (G == 0).nonzero()
     nG = G.clone()
-    nG[idx] = np.sqrt(T) # T = time horizon?
+    nG[idx] = np.sqrt(T) # T?
     G = nG
 
     dic = dic / G
-    # print ('dic_shape: ', dic.shape) #size = 9x161 (161 = 40 simbols/quadrant x4 quadrants, N) (9 o 10 = input o output, finestra temporal (K))
+    # print (dic.shape) size = 9x 161 (161 = 40 simbols/quadrant x4 quadrants, N) (9 o 10 = input o output, finestra temporal (K))
     # conte els pols unicament
     return dic
 
@@ -40,7 +40,7 @@ def creatRealDictionary(T, Drr, Dtheta, gpu_id):
 def fista(D, Y, lambd, maxIter, gpu_id):
     DtD = torch.matmul(torch.t(D), D)  # product of tensor t(D)-->D' and D --> D = dictionary
     L = torch.norm(DtD, 2)
-    linv = 1 / L # inverse of the norm
+    linv = 1 / L  # inverse of the norm
     DtY = torch.matmul(torch.t(D), Y)
     x_old = Variable(torch.zeros(DtD.shape[1], DtY.shape[2]).cuda(gpu_id), requires_grad=True)
     t = 1 #initial state
@@ -76,7 +76,7 @@ def fista(D, Y, lambd, maxIter, gpu_id):
             t = t_new
             x_old = x_new
             del x_new
-    # print(x_old.shape) # retorna 1x161xn_pixels. Es a dir: un vector sparce code per cada pixel. x_old = c*p o c?
+    #print(x_old.shape) # retorna 1x161xn_pixels. Es a dir: un vector sparce code per cada pixel. x_old = c*p o c?
     return x_old
 
 
@@ -97,30 +97,35 @@ class Encoder(nn.Module):
         return Variable(sparsecode)
 
 
-class Decoder(nn.Module):
-    def __init__(self, rr, theta, T, PRE, gpu_id): #PRE?
-        super(Decoder, self).__init__()
-
-        self.rr = rr
-        self.theta = theta
-        self.T = T
-        self.PRE = PRE
-        self.gid = gpu_id
+class Classifier (nn.Module):
+    def __init__(self, N, x_sz, y_sz):
+        super(Appearance,self).__init__()
+        self.N = N
+        self.x_sz = x_sz
+        self.y_sz = y_sz
+        self.fc1 = nn.Linear((N*4 +1) * x_sz * y_sz , 100)
+        self.fc2 = nn.Linear(100, 20)
+        self.fc3 = nn.Linear(20, 2)
 
     def forward(self, x):
-        dic = creatRealDictionary(self.T + self.PRE, self.rr, self.theta, self.gid)
-        result = torch.matmul(dic, x)
-        return result
+        x = x.view(-1, (N * 4 + 1) * x_sz * y_sz)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+
+        return F.log_softmax(x, dim=1)
 
 
-class OFModel(nn.Module):
+class FullOFModel(nn.Module):
     def __init__(self, Drr, Dtheta, T, PRE, gpu_id):
         super(OFModel, self).__init__()
         self.l1 = Encoder(Drr, Dtheta, T, gpu_id)
-        self.l2 = Decoder(self.l1.rr, self.l1.theta, T, PRE, gpu_id)
+        self.l2 = Classifier(40, 64, 64)
+
+    def forward_enc(self, x):
+        x = self.l1(x)
+        return x
 
     def forward(self, x):
-        return self.l2(self.l1(x))
-
-    def forward2(self, x):
-        return self.l1(x)
+        x = l2(self.l1(x))
+        return x

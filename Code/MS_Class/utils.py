@@ -19,7 +19,7 @@ from torch.utils.data import Dataset, DataLoader
 ## Dataloader for PyTorch.
 class videoDataset(Dataset):
     """Dataset Class for Loading Video"""
-    def __init__(self, folderList, rootDir, N_FRAME, N_FRAME_FOLDER): #N_FRAME = FRA+PRE
+    def __init__(self, folderList, rootDir, N_FRAME):
 
         """
         Args:
@@ -31,7 +31,6 @@ class videoDataset(Dataset):
         self.listOfFolders = folderList
         self.rootDir = rootDir
         self.nfra = N_FRAME
-        self.nfrafol = N_FRAME_FOLDER
         # self.numpixels = 240*320 # If Kitti dataset, self.numpixels = 128*160
         self.numpixels = 64*64 # MNIST moving symbols dataset
 
@@ -39,24 +38,19 @@ class videoDataset(Dataset):
         return len(self.listOfFolders)
 
 
-    # def readData(self, folderName):
-    #     path = os.path.join(self.rootDir,folderName)
-    #     OF = torch.FloatTensor(2, self.nfra, self.numpixels)
-    #     for framenum in range(self.nfra):
-    #         flow = np.load(os.path.join(path,str(framenum)+'.npy'))
-    #         flow = np.transpose(flow,(2,0,1))
-    #         OF[:,framenum] = torch.from_numpy(flow.reshape(2,self.numpixels)).type(torch.FloatTensor)
-    #     return OF
-
     def readData(self, folderName):
         path = os.path.join(self.rootDir,folderName)
-        OF = torch.FloatTensor(2,self.nfrafol,self.numpixels)
-
-        for framenum in range(self.nfrafol):
+        OF = torch.FloatTensor(2,self.nfra,self.numpixels)
+        for framenum in range(self.nfra):
             flow = np.load(os.path.join(path,str(framenum)+'.npy'))
             flow = np.transpose(flow,(2,0,1))
             OF[:,framenum] = torch.from_numpy(flow.reshape(2,self.numpixels)).type(torch.FloatTensor)
-        return OF
+
+            with open(os.path.join(path, "labels.txt")) as f:
+                target = [line.split() for line in f]
+                target = [target[0][0], int(target[1][0])]
+                
+        return OF, target
 
     # # ____FOR GRAYSCALE IMAGES____
     # def readData(self, folderName):
@@ -71,13 +65,12 @@ class videoDataset(Dataset):
     #         Fr[:, framenum] = torch.from_numpy(flow.reshape(1, self.numpixels)).type(torch.FloatTensor)
     #     return Fr
 
-
     def __getitem__(self, idx):
         folderName = self.listOfFolders[idx]
-        Frame = self.readData(folderName)
+        Frame, target = self.readData(folderName)
         sample = { 'frames': Frame }
-
-        return sample
+        print (target)
+        return sample, target
 
 
 ## Design poles
@@ -150,7 +143,7 @@ def save_checkpoint(state, filename='checkpoint.pth'):
 
 def getListOfFolders(File):
     data = pd.read_csv(File, sep=" ", header=None)[0]
-    # data = data.str.split('/',expand=True)[1] # --> This is commented for the warp.py!!! review for other scripts
+    # data = data.str.split('/',expand=True)[1]
     data = data.str.rstrip(".avi").values.tolist()
 
     return data

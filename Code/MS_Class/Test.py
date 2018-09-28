@@ -81,17 +81,16 @@ ofmodel = loadOpticalFlowModel(opticalflow_ckpt_file)
 ofSample = torch.FloatTensor(2, FRA, numOfPixels)
 
 # set test list name:
-testFolderFile = './datasets/DisentanglingMotion/importing_data/moving_symbols/MovingSymbols2_testlist.txt'
+testFolderFile = 'testlist01.txt'
 # set test data directory:
-rootDir = './datasets/DisentanglingMotion/importing_data/moving_symbols/output/MovingSymbols2_same_4px-OF/test'
+rootDir = '/data/Abhishek/frames/'
 # for UCF dataset:
 testFoldeList = getListOfFolders(testFolderFile)[::10]
 ## if Kitti: use folderList instead of testFoldeList
 ## folderList = [name for name in os.listdir(rootDir) if os.path.isdir(os.path.join(rootDir))]
 ## folderList.sort()
 
-# flowDir = '/home/abhishek/Workspace/UCF_Flows/Flows_ByName/'
-flowDir = './datasets/DisentanglingMotion/importing_data/moving_symbols/output/MovingSymbols2_same_4px-OF/test'
+flowDir = '/home/abhishek/Workspace/UCF_Flows/Flows_ByName/'
 
 for	numfo,folder in enumerate(testFoldeList):
     print("Started testing for - "+ folder)

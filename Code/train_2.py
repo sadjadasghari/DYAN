@@ -61,6 +61,7 @@ N_FRAME = FRA+PRE
 N = NumOfPoles*4
 T = FRA # number of row in dictionary(same as input number of frame)
 saveEvery = 2
+N_FRAME_FOLDER = 18
 
 #mnist
 x_fra = 64
@@ -70,7 +71,7 @@ y_fra = 64
 px_ev = False # save plots of pixel evolutiona and OF inputs.
 
 
-## Load saved model 
+## Load saved model
 load_ckpt = False
 ckpt_file = 'MS_Model_4px24.pth' # for Kitti Dataset: 'KittiModel.pth'
 # checkptname = "UCFModel"
@@ -95,7 +96,8 @@ trainFoldeList = getListOfFolders(trainFolderFile)[::10]
 
 trainingData = videoDataset(folderList=trainFoldeList,
                             rootDir=rootDir,
-                            N_FRAME=N_FRAME)
+                            N_FRAME=N_FRAME,
+                            N_FRAME_FOLDER = N_FRAME_FOLDER)
 
 dataloader = DataLoader(trainingData,
                         batch_size=BATCH_SIZE ,
@@ -135,82 +137,34 @@ for epoch in range(start_epoch, EPOCH+1):
     loss_value = []
     scheduler.step()
     for i_batch, sample in enumerate(dataloader):
+        for n in range(N_FRAME_FOLDER-N_FRAME):
+            data = sample['frames'].squeeze(0).cuda(gpu_id)
+            expectedOut = Variable(data)
+            inputData = Variable(data[:,n:(n+FRA),:])
+            optimizer.zero_grad()
+            output = model.forward(inputData)
+            loss = loss_mse(output[:,FRA], expectedOut[:,n+FRA]) # if Kitti: loss = loss_mse(output, expectedOut)
 
-        data = sample['frames'].squeeze(0).cuda(gpu_id)
-        expectedOut = Variable(data)
-        inputData = Variable(data[:,0:FRA,:])
+            loss.backward()
+            optimizer.step()
+            loss_value.append(loss.data.item())
 
-        optimizer.zero_grad()
-        output = model.forward(inputData)
+            # Visualize expected and output images.
+            po = output.data.cpu().numpy()
+            eo = expectedOut.data.cpu().numpy()
+            tmp1 = np.zeros([64, 64, 3], dtype=np.float16)
+            tmp1[:, :, 0] = po[0, FRA, :].reshape(x_fra, y_fra)
+            tmp1[:, :, 1] = po[1, FRA, :].reshape(x_fra, y_fra)
 
-        if (px_ev):
-            # Visualize time evolution of a single pixel from the input data
-            v = inputData.data.cpu().numpy()
-            px_id = 64*32+32
-            px = v[:,:,px_id]
+            scipy.misc.imsave('predicted_outputOF.png', tmp1)
 
-            if(px[px > 3.5].size > 2 and px[px < -3.5].size > 2 and count<1):
+            tmp2 = np.zeros([64, 64, 3], dtype=np.float16)
+            tmp2[:, :, 0] = eo[0, n+FRA, :].reshape(x_fra, y_fra)
+            tmp2[:, :, 1] = eo[1, n+FRA, :].reshape(x_fra, y_fra)
 
-                fig, ax = plt.subplots(nrows=2, ncols=1)
-                ax.flatten()
-                ax[0].set_ylim([-5,5])
-                ax[1].set_ylim([-5, 5])
-
-                ax[0].plot(px[0, :])
-                ax[1].plot(px[1, :])
-                ax[0].set_title('Pixel Value for U')
-                ax[1].set_title('Pixel Value for V')
-                plt.savefig('pixel_evolution_OF.png')
-
-                for i in range(FRA):
-
-                    # inputData[:,:,px_id] = -10
-                    hsv = np.zeros([64, 64, 3], dtype=np.float16)
-                    hsv[:,:,0] = v[0,i,:].reshape(x_fra,y_fra)
-                    hsv[:,:,2] = v[1,i,:].reshape(x_fra,y_fra)
-                    hsv[32,32,1] = 5
-                    #
-                    # cv2.imwrite('inputOF_%5.2f.png' %i, hsv[:,:,0])
-                    legend = np.zeros([2, 11, 3], dtype=np.float16)
-                    for n in range(11):
-                        legend[0, n, 0]= n-5
-                        legend[1, n, 2] = n - 5
-                    print('saving........')
-                    scipy.misc.imsave('legend.png' ,legend)
-                    scipy.misc.imsave('inputOF_%5.2f.png' %i, hsv)
-
-                    # torchvision.utils.save_image(inputData[0, i, :].view(x_fra, y_fra), 'inputOF_U_F%5.2f.png' %i)
-                    # torchvision.utils.save_image(inputData[1, i, :].view(x_fra, y_fra), 'inputOF_V_F%5.2f.png' %i)
-                count = 1
-                # sys.exit("Enough")
-
-        # Visualize expected and output images.
-        # po = output.data.cpu().numpy()
-        # eo = expectedOut.data.cpu().numpy()
-        # tmp1 = np.zeros([64, 64, 3], dtype=np.float16)
-        # tmp1[:, :, 0] = po[0, FRA, :].reshape(x_fra, y_fra)
-        # tmp1[:, :, 1] = po[1, FRA, :].reshape(x_fra, y_fra)
-        #
-        # scipy.misc.imsave('predicted_outputOF.png', tmp1)
-        #
-        # tmp2 = np.zeros([64, 64, 3], dtype=np.float16)
-        # tmp2[:, :, 0] = eo[0, FRA, :].reshape(x_fra, y_fra)
-        # tmp2[:, :, 1] = eo[1, FRA, :].reshape(x_fra, y_fra)
-        #
-        # scipy.misc.imsave('expected_outputOF.png', tmp2)
-
-        # torchvision.utils.save_image(output[:, FRA].view(2,x_fra,y_fra), 'predicted_output.png',)
-        # torchvision.utils.save_image(expectedOut[:, FRA].view(2,x_fra,y_fra), 'expected_output.png', )
-
-        # Compute loss
-
-        loss = loss_mse(output[:,FRA], expectedOut[:,FRA]) # if Kitti: loss = loss_mse(output, expectedOut)
-        loss.backward()
-        optimizer.step()
-        loss_value.append(loss.data.item())
+            scipy.misc.imsave('expected_outputOF.png', tmp2)
 
     loss_val = np.mean(np.array(loss_value))
-
 
     if epoch % saveEvery ==0 :
         save_checkpoint({	'epoch': epoch + 1,

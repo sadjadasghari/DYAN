@@ -1,14 +1,15 @@
-Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/icons8
-Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/mnist
-Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/omniglot
-Code/datasets/DisentanglingMotion/importing_data/moving_symbols/output
-Code/datasets/UCF-101
-Code/datasets/Caltech
-Code/datasets/UCF-101-Frames
-Code/datasets/Kitti_Flows
-Code/DyanOF/Test/Results
-Code/DyanOF/Test/Results0
+#Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/icons8
+#Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/mnist
+#Code/datasets/DisentanglingMotion/importing_data/moving_symbols/data/omniglot
+#Code/datasets/DisentanglingMotion/importing_data/moving_symbols/output
+#Code/datasets/UCF-101
+#Code/datasets/Caltech
+#Code/datasets/UCF-101-Frames
+#Code/datasets/Kitti_Flows
+DyanOF_Kitti/Test/Results
+DyanOF_Kitti/Test/Results0
 inspiration
-Code/Results
+Code/datasets
+
 
 

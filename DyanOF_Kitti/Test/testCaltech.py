@@ -13,6 +13,7 @@ from torch.utils.data import Dataset, DataLoader
 ## Generic imports
 import os
 import time
+import sys
 import pickle
 import random
 import argparse
@@ -144,6 +145,7 @@ __imgsize__ = (128,160)
 mse = []
 ssim = []
 psnr = []
+c_list = []
 sample = torch.FloatTensor(2,FRA,128*160)
 
 # folderList = [name for name in os.listdir(rootDir) if os.path.isdir(os.path.join(rootDir))]
@@ -187,6 +189,7 @@ for folder in folderList:
         start = current_milli_time()
         with torch.no_grad():
             sparse = model.forward(Variable(inputData))
+            c_list.append(sparse)
         prediction = torch.matmul(dictionary,sparse)[:,FRA,:].data.permute(1,0).resize(128,160,2).cpu().numpy()
         img_back = scipwarp(tenth,prediction[:,:,0],prediction[:,:,1])
         #print(current_milli_time() - start)

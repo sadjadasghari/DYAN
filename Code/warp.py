@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 from DyanOF import OFModel
-from utils import getListOfFolders
+from utils import getListOfFolders_warp
 
 from skimage import measure
 from scipy.misc import imread, imresize
@@ -23,7 +23,7 @@ T = FRA
 numOfPixels = 64 * 64  # if Kitti: 128*160
 
 gpu_id = 1
-opticalflow_ckpt_file = 'MS_Model_4px_4.pth'  # if Kitti: 'KittiModel.pth'
+opticalflow_ckpt_file = 'MS_Model_4px_16.pth'  # if Kitti: 'KittiModel.pth'
 
 
 def loadOpticalFlowModel(ckpt_file):
@@ -60,7 +60,7 @@ testFolderFile = './datasets/DisentanglingMotion/importing_data/moving_symbols/M
 # set test data directory:
 rootDir = './datasets/DisentanglingMotion/importing_data/moving_symbols/output/MovingSymbols2_same_4px-Frames/test'
 # for UCF dataset:
-testFoldeList = getListOfFolders(testFolderFile)[::10]
+testFoldeList = getListOfFolders_warp(testFolderFile)[::10]
 ## if Kitti: use folderList instead of testFoldeList
 ## folderList = [name for name in os.listdir(rootDir) if os.path.isdir(os.path.join(rootDir))]
 ## folderList.sort()

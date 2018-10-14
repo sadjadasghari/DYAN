@@ -72,8 +72,8 @@ px_ev = False # save plots of pixel evolutiona and OF inputs.
 
 
 ## Load saved model
-load_ckpt = False
-ckpt_file = 'MS_Model_4px24.pth' # for Kitti Dataset: 'KittiModel.pth'
+load_ckpt = True
+ckpt_file = 'MS_Model_4px_22.pth' # for Kitti Dataset: 'KittiModel.pth'
 # checkptname = "UCFModel"
 checkptname = "MS_Model_4px_"
 
@@ -139,6 +139,7 @@ for epoch in range(start_epoch, EPOCH+1):
     for i_batch, sample in enumerate(dataloader):
         for n in range(N_FRAME_FOLDER-N_FRAME):
             data = sample['frames'].squeeze(0).cuda(gpu_id)
+            print(data, data.shape)
             expectedOut = Variable(data)
             inputData = Variable(data[:,n:(n+FRA),:])
             optimizer.zero_grad()

@@ -6,10 +6,10 @@
 #Code/datasets/Caltech
 #Code/datasets/UCF-101-Frames
 #Code/datasets/Kitti_Flows
-DyanOF_Kitti/Test/Results
-DyanOF_Kitti/Test/Results0
+#DyanOF_Kitti/Test/Results
+#DyanOF_Kitti/Test/Results0
 inspiration
-Code/datasets
+#Code/datasets
 
 
 

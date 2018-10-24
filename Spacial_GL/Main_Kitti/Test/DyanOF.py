@@ -1,15 +1,13 @@
 ############################# Import Section #################################
 
 ## Imports related to PyTorch
-import sys
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from math import sqrt
 import time
+from math import sqrt
 import numpy as np
-from utils import getCells_stride_Kitti
 
 
 ############################# Import Section #################################
@@ -39,40 +37,7 @@ def creatRealDictionary(T, Drr, Dtheta, gpu_id):
     # conte els pols unicament
     return dic
 
-# def softshrink(x, lambd, gpu_id):
-#     t0=time.time()
-#     One = Variable(torch.ones(1).cuda(gpu_id))
-#     Zero = Variable(torch.zeros(1).cuda(gpu_id))
-#     ids = np.arange(128 * 160).reshape(128, 160)  # Kitti dimensions
-#     cell_ids = getCells_stride_Kitti(ids, 2)
-#
-#     lambd_t = One * lambd
-#     subgrads = torch.zeros(2,161,128*160).cuda(gpu_id)
-#
-#     t1 = time.time()
-#     #comp = np.zeros(128*160)
-#     for cell in cell_ids:
-#         #t2 = time.time()
-#         print(x.shape)
-#         xx_old = torch.norm(x[:,:,cell],2,2)
-#         xx_old[xx_old==0]=lambd_t/1000
-#         subgrad = torch.max(One - torch.div(lambd_t, xx_old), Zero)
-#         print(subgrad.shape)
-#         subgrad = subgrad.expand(cell.shape[0], 2, 161).permute(1, 2, 0)
-#         idx = 0
-#
-#         for i in cell:
-#             subgrads[:,:,i] = subgrad[:,:,idx]
-#             #comp[i] += 1
-#             idx += 1
-#         #t3 = time.time()
-#     x = x*subgrads
-#     #print('Times: Declare-',t1-t0,' compute 1 cell-', t3-t2,' 1 softshrink-', time.time()-t0)
-#
-#
-#     return x
-
-def softshrink(x, lambd, gpu_id):
+def softshrinkGL(x, lambd, gpu_id):
     nch = 2
     nx = 161
     # xs = 128
@@ -84,14 +49,9 @@ def softshrink(x, lambd, gpu_id):
     Zero = Variable(torch.zeros(1).cuda(gpu_id), requires_grad=False)
     lambd_t = One * lambd
 
-    # subgrads = torch.zeros(nch,161,128*160).cuda(gpu_id)
-
-    t1 = time.time()
     x = x.view(nch,nx,128,160)
     poolL2 = nn.LPPool2d(2,ws,stride=ws, ceil_mode=True)
     xx_old = poolL2(x)
-
-
     xx_old[xx_old == 0] = lambd_t / 1000
     subgrad = torch.max(One - torch.div(lambd_t, xx_old), Zero)
     xs = subgrad.shape[2]
@@ -100,31 +60,36 @@ def softshrink(x, lambd, gpu_id):
     x = (x*subgrad).view(nch,nx,-1,20480).squeeze()
     # print('total time per subgrad op: ', time.time()-t0)
     # print('done!')
-
     return x
 
 def fista(D, Y, lambd, maxIter, gpu_id):
-    DtD = torch.matmul(torch.t(D), D) 
+    DtD = torch.matmul(torch.t(D), D)  # product of tensor t(D)-->D' and D --> D = dictionary
     L = torch.norm(DtD, 2)
-    linv = 1 / L
+    linv = 1 / L # inverse of the norm
     DtY = torch.matmul(torch.t(D), Y)
     x_old = Variable(torch.zeros(DtD.shape[1], DtY.shape[2]).cuda(gpu_id), requires_grad=True)
-    t = 1 
+    t = 1 #initial state
     y_old = x_old  # inicialize x and y at 0
     lambd = lambd * (linv.data.cpu().numpy())
     A = Variable(torch.eye(DtD.shape[1]).cuda(gpu_id), requires_grad=True) - torch.mul(DtD, linv)
+    # A = I(_eye_) - 1/L(DtD)
 
     DtY = torch.mul(DtY, linv)
+    # b = DtY - lambd?
+
     Softshrink = nn.Softshrink(lambd)
     with torch.no_grad():
 
         for ii in range(maxIter):
-            Ay = torch.matmul(A, y_old) #y = gamma_t
+            Ay = torch.matmul(A, y_old)
             del y_old
             with torch.enable_grad():
-                x_new = Softshrink((Ay + DtY)) #,lambd,gpu_id
+
+                x_new = Softshrink((Ay + DtY))
+                # x_new = softshrinkGL((Ay + DtY), lambd, gpu_id)
+
             t_new = (1 + np.sqrt(1 + 4 * t ** 2)) / 2.
-            tt = (t - 1) / t_new 
+            tt = (t - 1) / t_new
             y_old = torch.mul(x_new, (1 + tt))
             y_old -= torch.mul(x_old, tt)
             if torch.norm((x_old - x_new), p=2) / x_old.shape[1] < 1e-4:
@@ -137,7 +102,7 @@ def fista(D, Y, lambd, maxIter, gpu_id):
 
 
 class Encoder(nn.Module):
-    def __init__(self, Drr, Dtheta, T, gpu_id): #Drr = D_rho (modul..?), Dtheta = phase, T = Length of dict
+    def __init__(self, Drr, Dtheta, T, gpu_id):
         super(Encoder, self).__init__()
 
         self.rr = nn.Parameter(Drr)

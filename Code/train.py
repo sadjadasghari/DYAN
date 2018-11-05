@@ -81,11 +81,11 @@ checkptname = "MS_Model_4px_"
 ## Load input data
 
 # set train list name:
-trainFolderFile = './datasets/DisentanglingMotion/importing_data/moving_symbols/MovingSymbols2_trainlist.txt'
+trainFolderFile = '/home/armandcomas/datasets/DisentanglingMotion/importing_data/moving_symbols/MovingSymbols2_trainlist.txt'
 # trainFolderFile = 'trainlist01.txt'
 
 # set training data directory:
-rootDir = './datasets/DisentanglingMotion/importing_data/moving_symbols/output/MovingSymbols2_same_4px-OF/train'
+rootDir = '/home/armandcomas/datasets/DisentanglingMotion/importing_data/moving_symbols/output/MovingSymbols2_same_4px-OF/train'
 # rootDir = './datasets/UCF-101-Frames'
 
 trainFoldeList = getListOfFolders(trainFolderFile)[::10]
